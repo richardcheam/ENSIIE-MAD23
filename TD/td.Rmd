@@ -1,0 +1,71 @@
+---
+title: "mad"
+author: "Richard CHEAM"
+date: "2023-10-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+df <- iris
+summary(df)
+df
+```
+```{r}
+sl_ <- df$Sepal.Length
+slMean_ <- mean(sl_)
+slSd_ <- sqrt(var(sl_))
+slLowerBound_ <- slMean_ - 2*slSd_
+slUpperBound_ <- slMean_ + 2*slSd_
+slOutlier_ <- sl_[sl_ < slLowerBound_ | sl_ > slUpperBound_]
+slFiltrer_ <- sl_[sl_ > slLowerBound_ & sl_ < slUpperBound_]
+length(slOutlier_)
+length(slFiltrer_)
+```
+
+```{r}
+sw_ <- df$Sepal.Width
+swMean_ <- mean(sw_)
+swSd_ <- sqrt(var(sw_))
+swLowerBound_ <- swMean_ - 2*swSd_
+swUpperBound_ <- swMean_ + 2*swSd_
+swOutlier_ <-  sw_[sw_ < swLowerBound_ | sw_ > swUpperBound_]
+swFiltrer_ <-  sw_[sw_ > swLowerBound_ & sw_ < swUpperBound_]
+length(swOutlier_)
+length(swFiltrer_)
+```
+```{r}
+pl_ <- df$Petal.Length
+plMean_ <- mean(pl_)
+plSd_ <- sqrt(var(pl_))
+plLowerBound_ <- plMean_ - 2*plSd_
+plUpperBound_ <- plMean_ + 2*plSd_
+plOutlier_ <-  pl_[pl_ < plLowerBound_ | pl_ > plUpperBound_]
+plFiltrer_ <- pl_[pl_ > plLowerBound_ & pl_ < plUpperBound_]
+length(plOutlier_)
+length(plFiltrer_)
+```
+```{r}
+pw_ <- df$Petal.Width
+pwMean_ <- mean(pw_)
+pwSd_ <- sd(pw_)
+pwLowerBound_ <- pwMean_ - 2*pwSd_
+pwUpperBound_ <- pwMean_ + 2*pwSd_
+pwOutlier_ <-  pw_[pw_ < pwLowerBound_ | pw_ > pwUpperBound_]
+pwFiltrer_ <- pw_[pw_ > pwLowerBound_ & pw_ < pwUpperBound_]
+length(pwOutlier_)
+length(pwFiltrer_)
+```
+
+```{r}
+library(MASS)
+
+n <- 1000
+mu_ <- c(0, 0)
+sigma_ <- matrix(c(2, 1, 1, 0.75), ncol = 2)
+simulation_ <- mvrnorm(n, mu_, sigma_)
+
+```

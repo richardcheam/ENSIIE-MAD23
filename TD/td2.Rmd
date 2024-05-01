@@ -1,0 +1,80 @@
+---
+title: "td2"
+author: "Richard CHEAM"
+date: "2023-10-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data("iris")
+setosa <- iris$Species=="setosa"
+versicolor <- iris$Species=="versicolor"
+virginica <- iris$Species=="virginica"
+```
+
+```{r}
+partition_matrix <- cbind(setosa, versicolor, virginica)
+C <- matrix(as.integer(partition_matrix),ncol=3)
+```
+
+```{r}
+matrix(0, 3, ncol = dim(iris)[2]-1)
+```
+
+$(X^TC)^T/diag(C^TC)$
+
+# Exercice 4
+
+```{r}
+library(MASS)
+data("crabs")
+crabs
+```
+
+```{r}
+pairs(crabs[,c("FL", "RW", "CL", "CW", "BD")], col = crabs$sp, pch = c(21, 24)[unclass(crabs$sex)])
+```
+
+relation between the variables are linear which is strongly correlated. 
+
+
+```{r}
+# k = 4
+res <- kmeans(crabs[,4:8], 4)
+res
+```
+
+```{r}
+TrueClasses <- matrix(1:4,2,2)
+colnames(TrueClasses) = levels(crabs$sex)
+rownames(TrueClasses) = levels(crabs$sp)
+TrueClasses <- diag(TrueClasses[crabs$sex, crabs$sp])
+table(Kmeans = res$cluster, TrueClasses)
+```
+
+```{r}
+res_ <- rep(0, 1000)
+for (i in 1:1000){
+  res_[i] <- sum((kmeans(crabs[,4:8], 4))$withinss)
+}
+summary(res_)
+```
+
+## 6)
+```{r}
+cor(crabs[,4:8])
+crabs
+```
+
+## 8)
+```{r}
+IW <- rep(0,30)
+for (k in 1:30){
+  IW[k] <- kmeans(crabs[,4:8], k, nstart = 30)$tot.withinss 
+}
+plot(IW, pch = 20)
+```

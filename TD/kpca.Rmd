@@ -1,0 +1,47 @@
+---
+title: "td_kpca"
+author: "Richard CHEAM"
+date: "2023-12-11"
+output: html_document
+---
+
+```{r}
+library(kernlab)
+library(caret)
+library(FactoMineR)
+library(factoextra)
+```
+
+```{r}
+data(spam)
+df <- spam
+class <- spam$type
+df <- subset(df, select = -type)
+```
+
+```{r}
+res.pca <- prcomp(df, scale. = TRUE, center = TRUE)
+biplot(res.pca)
+```
+
+```{r}
+C <- res.pca$x
+C <- C[,1:2]
+```
+
+```{r}
+plot(C, col = factor(class))
+```
+
+```{r}
+train <- sample(1:nrow(spam), 400, replace = FALSE)
+kpc <- kpca(~., data = spam[train,-58], kernel = "rbfdot", kpar = list(sigma=0.001), features = 2)
+```
+
+```{r}
+plot(rotated(kpc), col = as.numeric(spam[train,58]))
+```
+
+
+
+

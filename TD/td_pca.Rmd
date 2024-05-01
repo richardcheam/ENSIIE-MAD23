@@ -1,0 +1,381 @@
+---
+title: "td_pca"
+author: "Richard CHEAM"
+date: "2023-11-20"
+output: pdf_document
+---
+
+```{r}
+myPCA <- function(X, scale = TRUE, nb_comp = 2){
+  X = scale(as.matrix(X), center = TRUE, scale = scale)
+  n = nrow(X)
+  p = ncol(X)
+  S = (t(X)%*%X)/n
+  tmp = eigen(S)
+  U = tmp$vectors[,1:nb_comp]
+  lambda = tmp$values[1:nb_comp]
+  C = X %*% U
+  It = sum(X^2)
+  variance_tot = It/n
+  Q = cumsum(lambda)/variance_tot
+  return (list(C=C, U=U, lambda = lambda, variance.tot = sum(lambda), Q = Q))
+}
+```
+
+
+```{r}
+X<-read.table(text="
+               math   scie   fran   lati    d-m
+  jean          6.0    6.0    5.0    5.5    8.0
+  aline         8.0    8.0    8.0    8.0    9.0
+  annie         6.0    7.0   11.0    9.5   11.0
+  monique      14.5   14.5   15.5   15.0    8.0
+  didier       14.0   14.0   12.0   12.5   10.0
+  andre        11.0   10.0    5.5    7.0   13.0
+  pierre        5.5    7.0   14.0   11.5   10.0
+  brigitte     13.0   12.5    8.5    9.5   12.0
+  evelyne       9.0    9.5   12.5   12.0   18.0
+")
+```
+
+```{r}
+student_pca <- myPCA(X, scale = FALSE, nb_comp = 5)
+student_pca
+```
+
+```{r}
+library(ggplot2)
+library(ggfortify)
+```
+
+```{r}
+#representation des individus
+C <- data.frame(student_pca$C)
+ggplot(data = C, 
+       aes(x=C[,1], y=C[,2], label = rownames(C))) +
+  geom_point(alpha = 0.5) +
+  geom_text(vjust = 1) + 
+  xlab(names(C)[1]) + 
+  ylab(names(C)[2]) +
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0)
+```
+
+```{r}
+#cercle des corrélations
+circleFun <- function(center = c(0,0),diameter = 1, npoints = 100){
+    r = diameter / 2
+    theta<- seq(0,2*pi,length.out = npoints)
+    xx <- center[1] + r * cos(theta)
+    yy <- center[2] + r * sin(theta)
+    return(data.frame(x = xx, y = yy))
+}
+
+cor.circle <- circleFun(c(0,0),2,npoints = 100)
+colnames(cor.circle)<-c("PC1","PC3")
+
+D<-cor(as.matrix(X),as.matrix(C)) # Coordonnées des anciennes variables par rapport au
+D<-data.frame(D[,c(1,3)])
+D$label<-rownames(D)
+names(D)<-c("PC1","PC3","label")
+
+# Cercle des correlations
+plot.correlation.circle<-function(D){
+  ggplot() +
+  # Draw the circle
+  geom_path(data = cor.circle, aes(PC1, PC3)) +
+  # Add the arrows
+  geom_segment(data = D, aes(x = 0, y = 0, xend = PC1, yend = PC3),
+               arrow = arrow(length = unit(0.2, "cm")), lineend = "round") +
+  # Add the labels
+  geom_text(data = D, aes(x = PC1, y = PC3, label = label), vjust = -0.5, hjust = 0.5) + 
+    # Set the aspect ratio
+  coord_equal() +
+  # Set the plot limits
+  xlim(-1, 1) +
+  ylim(-1, 1)
+}
+
+
+plot.correlation.circle(D)+geom_vline(xintercept=0)+geom_hline(yintercept=0)
+
+```
+
+
+```{r}
+#cov(X) not equal to S becos in R, cov(X) = 1/n-1, S = 1/n
+#qualité de représentation: Q(E) = Ie/It
+```
+
+# Exercice 2
+
+```{r}
+library(ggfortify)
+library(ggpubr)
+library(FactoMineR)
+library(factoextra)
+library(GGally)
+```
+
+```{r}
+library(MASS)
+data(crabs)
+crabsquant <- crabs[,4:8]
+crabsquant
+```
+
+```{r}
+res <- prcomp(crabsquant, scale. = TRUE)
+summary(res)
+```
+```{r}
+pourcentage.inertie <- (res$sdev)^2/sum((res$sdev)^2)
+pourcentage.inertie
+
+C <- res$x
+C
+```
+
+* First component is 0.96, almost 1, it is extremely correlated
+
+```{r}
+class_sp <- autoplot(res, loadings = TRUE, data = crabs, colour = "sp")
+class_sex <- autoplot(res, loadings = TRUE, data = crabs, colour = "sex")
+ggarrange(class_sp, class_sex, nrow = 1, ncol = 2)
+```
+
+```{r}
+groupes = paste(crabs$sp, crabs$sex, sep = "-")
+groupes = as.factor(groupes)
+pairs(data.frame(C), col = groupes)
+```
+
+```{r}
+ggpairs(data.frame(C), aes(color = crabs$sp, shape = crabs$sex))
+```
+
+Pour avoir correlation entre PC2 et PC3
+
+RW correlé négativement, F left() , M right(), O up(), B down()
+
+when go left, the other 4 are negative, vice versa
+
+CL CW lower half, FL BD upper half
+
+```{r}
+crabs
+```
+
+
+```{r}
+biplot(res, c(2,3))
+```
+
+```{r}
+acp_crabs <- PCA(crabsquant, scale.unit = TRUE, graph = TRUE)
+```
+
+```{r}
+acp_crabs$eig
+```
+
+```{r}
+acp_crabs$var
+```
+
+```{r}
+X <- crabsquant
+Xtilde <- X / X[, "CL"]
+Xtilde[, "CL"] <- NULL
+res_pca <- PCA(Xtilde)
+plot(res_pca$ind$coord[, 2], col=as.numeric(crabs$sp), pch=as.numeric(crabs$sex))
+```
+
+# Exo 3
+
+```{r}
+df <- read.table(file = "neighbor_globin.txt", header = FALSE, sep = "")
+df_ <- subset(df, select = -V1)
+View(df)
+dim(df_)
+```
+
+```{r}
+#matrice de centrage (centering matrice J)
+#B = V A V^T
+PCoA1 <- function(Delta, k){
+  Delta = as.matrix(Delta)
+  n = ncol(Delta)
+  J = diag(rep(1,n)) - (1/n)*matrix(1,n,n)
+  B = (-1/2)*(J %*% Delta %*% J)
+  eigen.B = eigen(B)
+  V = eigen.B$vectors
+  lambda = eigen.B$values
+  Y = V[,1:k] %*% diag(sqrt(lambda[1:k]))
+  return (list(B=B, V=V, lambda=lambda, Y=Y))
+}
+
+PCoA2 <- function(Delta, k){
+  Delta = as.matrix(Delta)
+  n = ncol(Delta)
+  J = diag(rep(1,n)) - (1/n)*matrix(1,n,n)
+  B = (-1/2)*(J %*% Delta %*% J)
+  svd.B = svd(B, nu = k, nv = k)
+  V = svd.B$v
+  lambda = svd.B$d
+  Y = V %*% diag(sqrt(lambda[1:k]))
+  return (list(B=B, V=V, lambda=lambda, Y=Y))
+}
+```
+
+## 3.
+
+```{r}
+Delta <- as.matrix(df_)
+```
+
+```{r}
+res = PCoA1(Delta, k = 2)
+#OR cmdscale()
+```
+
+```{r}
+plot(res$Y)
+text(res$Y, labels = rownames(df))
+barplot(res$lambda)
+```
+
+```{r}
+AFTD <- cmdscale(d = Delta, k = 2, eig=TRUE, x.ret=TRUE)
+plot(AFTD$points, type = "n")
+text(AFTD$points, labels = row.names(Delta))
+barplot(AFTD$eig)
+```
+
+```{r}
+#Axes 1 and 2
+plot(AFTD$points[,c(1,2)], type = "n")
+text(AFTD$points, labels = row.names(df_))
+barplot(AFTD$eig)
+```
+
+```{r}
+#Axes 1 and 3
+plot(AFTD$points[,c(1,3)], type = "n")
+text(AFTD$points, labels = row.names(df_))
+barplot(AFTD$eig)
+```
+
+
+
+
+```{r}
+sammon(d = Delta, k = 2)
+#initial stress: descent gradient
+```
+
+
+```{r}
+plot(sammon(d = Delta, k = 2)$points)
+```
+
+## Medoid
+
+Cik = select columns from a matrix distance that the columns are medoid
+
+```{r}
+#D est une matrice distance entre tous les points
+medoid <- function(D){
+  #medoid = min(apply(D, 2, sum))
+  medoid = which.min(colSums(D))
+  return (medoid)  
+}
+
+medoid(Delta)
+```
+
+
+```{r}
+data(iris)
+X <- iris[,1:4]
+D <- dist(X)
+#distance between the 150 flowers
+image(as.matrix(D))
+plot(X[,1:2])
+
+medoid(as.matrix(D))
+```
+
+```{r}
+points(X[62, 1:2], pch="x", cex = 2, col = "red")
+X[62, 1:2]
+```
+
+## K-medoid 11/12/23
+
+```{r}
+K_medoid <- function(X, k){
+  D = as.matrix(dist(X)); n = nrow(X); colnames(D) <- 1:n
+  medoids <- sample(1:n, k, replace = FALSE)
+  cluster <- rep(1,n); old.cluster <- rep(0,n)
+  
+  while(any(cluster != old.cluster)){
+    old.cluster <- cluster
+    cluster <- apply(D[,medoids], 1, which.min) #step E, parameter: medoids 
+    medoids <- as.integer(names(sapply(1:k,function(K){which.min(colSums(D[cluster==K,cluster==K]))}))) #sapply replace for(i in 1:k)
+  }
+  
+  criterion <- mean(sapply(1:n,function(i){D[i,cluster[i]]}))
+  return (list(medoids = medoids, cluster = cluster, criterion=criterion))
+}
+```
+
+
+```{r}
+res <- K_medoid(iris[,1:4],3)
+table(res$cluster, iris$Species)
+```
+
+```{r}
+library(cluster)
+```
+
+```{r}
+res.pam = pam(iris[,1:4], 3, nstart = 30)
+table(res.pam$clustering, iris$Species)
+```
+## Programmer une fonction qui calcule une distance avec un noyau gaussien comme produit scalire
+
+$$D_{ij} = \sqrt{k_{ii}-2k_{ij}+k_{jj}}$$
+
+$$k_{ij} = e^{-\frac{||x_i-x_j||^2}{\sigma^2}}$$
+
+```{r}
+kernel_gauss <- function(X, sigma = 1){
+  i = nrow(X); j = ncol(X)
+  K = exp(-((X[i,]-X[,j]) %*% (X[i,]-X[,j])) / sigma^2)
+  D = sqrt(2(1-K))
+  return (D)
+}
+
+kernel.gauss_ <- function(X, sigma = 1){
+  D <- exp(dist(X)^2/sigma^2)
+  return (D = sqrt(D))
+}
+
+kernel.gauss <- function(X, sigma = 1){
+  D <- sqrt(2 - (2*exp(-dist(X)^2/sigma^2)))
+  return (D)
+}
+```
+
+```{r}
+D <- kernel.gauss(iris[,1:4], sigma = 1) #bigger sigma => more global space
+image(as.matrix(D)) #D is transpose view contigency table by column
+```
+
+
+```{r}
+res.pam = pam(D, diss=TRUE, k = 3, nstart = 30)
+table(res.pam$clustering, iris$Species)
+```

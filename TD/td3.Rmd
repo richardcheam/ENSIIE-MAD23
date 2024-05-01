@@ -1,0 +1,173 @@
+---
+title: "td3-mixture"
+author: "Richard CHEAM"
+date: "2023-11-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mclust)
+```
+
+# Exercise 1
+
+```{r}
+#variables different so model V in Mclust
+parameters <- list()
+parameters$mean = c(0, 4)
+parameters$pi = c(1/3, 1-1/3)
+parameters$sd = c(1,1/2)
+
+z <- rmultinom(1000, 1, prob = parameters$pi)
+effectifs <- rowSums(z)
+
+x <- c(rnorm(effectifs[1], mean = 0, sd = 1), rnorm(effectifs[2], mean = 4, sd = 1/2))
+```
+
+```{r}
+#which.max(x) used to return index of x which has the highest value
+hist(apply(z,2,which.max))
+```
+
+```{r}
+mixture <- function(x){
+  (parameters$pi[1])*dnorm(x, mean = parameters$mean[1], sd = parameters$sd[1]) 
+  + (parameters$pi[2])*dnorm(x, mean = parameters$mean[2], sd = parameters$sd[2])
+}
+
+hist(x, 100, prob = TRUE)
+curve(mixture(x), add = TRUE, col = "red")
+```
+
+
+```{r}
+res <- kmeans(as.vector(x), 2, nstart = 30, iter.max = 100)
+res$cluster
+res$centers
+```
+
+```{r}
+trueClass <- rep(c(1,2), effectifs)
+sum(res$cluster != trueClass)
+mean(res$cluster != trueClass)
+
+table(trueClass, kmeans=res$cluster)
+```
+
+
+```{r}
+mean(x[trueClass==1])
+mean(x[trueClass==2])
+mean(x[res$cluster==2])
+mean(x[res$cluster==1])
+```
+
+```{r}
+sd(x[trueClass==1])
+sd(x[trueClass==2])
+sd(x[res$cluster==2])
+sd(x[res$cluster==1])
+#sapply(1:2, function(x), sd(X[res$cluster==x])))
+```
+## 4
+
+```{r}
+res_E <- Mclust(x, G = 1:9, modelNames = "E") #equal variance
+res_V <- Mclust(x, G = 1:9, modelNames = "V")
+res <- Mclust(x)
+summary(res)
+plot(res, "BIC")
+```
+
+
+```{r}
+plot(res_E, "BIC")
+plot(res_V, "BIC")
+```
+
+```{r}
+table(trueClass, res_V$classification)
+```
+
+```{r}
+plot(res_V, "classification")
+```
+
+```{r}
+Mclust(x, modelNames = "E", G=1:9)$parameters
+```
+
+# Exercice 2
+
+```{r}
+data <- faithful
+data
+plot(data)
+```
+```{r}
+res_faithful <- Mclust(data)
+summary(res_faithful)
+```
+
+```{r}
+res_faithful$parameters
+```
+
+```{r}
+plot(res_faithful, "classification")
+```
+
+```{r}
+plot(Mclust(data, modelNames = "EEE"), "BIC")
+```
+
+```{r}
+plot(res_faithful, "classification")
+```
+
+```{r}
+plot(res_faithful, "uncertainty")
+```
+
+```{r}
+plot(res_faithful, "density")
+```
+
+## 5
+
+* Ward D2 considers the distance between the centroids of the clusters being merged, while Ward D considers the distance between the individual data points and the mean of the merged cluster.
+
+```{r}
+res_hclust <- hclust(dist(data), method = "ward.D2")
+summary(res_hclust)
+```
+
+```{r}
+res_hclust$merge
+plot(res_hclust)
+```
+https://geodacenter.github.io/tutorials/classic_cluster/classic_cluster.html
+at [36,] step 36, observation 237 (-237) is joined with the cluster established in step [1,]
+
+```{r}
+hCLUST <- cutree(res_hclust, k = 3)
+table(mCLUST = res_faithful$classification, hCLUST)
+```
+
+```{r}
+#plot(faithful, col = hCLUST, pch = res_faithful$classification)
+par(mfrow = c(1,2))
+plot(faithful, col = hCLUST)
+plot(faithful, col = res_faithful$classification)
+```
+step E produces matrix T, step M produces parameters 
+
+
+```{r}
+EM <- function(X, G = 2, modelName = "V"){
+  parameters = 
+  return(list(parameters = parameters), T = T))
+}
+
+```
